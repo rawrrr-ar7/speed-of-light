@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Speed of Light, But You Can Feel It</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Fixed canvas for the light beam */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        #light-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Scroll content wrapper */
+        .scroll-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Hero section */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 200;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero .subtitle {
+            font-size: clamp(1rem, 2vw, 1.4rem);
+            color: #888;
+            font-weight: 300;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            animation: bounce 2s infinite;
+            color: #666;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(10px); }
+        }
+
+        .scroll-hint svg {
+            width: 24px;
+            height: 24px;
+            stroke: #666;
+        }
+
+        /* Journey sections */
+        .journey-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4rem 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .journey-section .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+
+        .journey-section h2 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 200;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .journey-section .distance {
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            color: #4a9eff;
+            font-weight: 300;
+            margin-bottom: 1rem;
+        }
+
+        .journey-section .time {
+            font-size: clamp(1rem, 2vw, 1.3rem);
+            color: #888;
+            font-weight: 300;
+            line-height: 1.6;
+        }
+
+        .journey-section .time .highlight {
+            color: #fff;
+            font-weight: 400;
+        }
+
+        .journey-section .fact {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.03);
+            border-left: 2px solid #4a9eff;
+            border-radius: 0 8px 8px 0;
+            font-size: 1rem;
+            color: #aaa;
+            line-height: 1.6;
+        }
+
+        /* Spacer for scroll distance */
+        .spacer {
+            height: 200vh;
+        }
+
+        /* Progress indicator */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4a9eff, #fff);
+            z-index: 100;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        /* Speed indicator */
+        .speed-indicator {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .speed-indicator .value {
+            color: #4a9eff;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        /* Stars background */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle 3s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        /* Final wow section */
+        .final-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .final-section h2 {
+            font-size: clamp(2rem, 5vw, 4rem);
+            font-weight: 200;
+            margin-bottom: 2rem;
+        }
+
+        .final-section .big-number {
+            font-size: clamp(3rem, 10vw, 8rem);
+            font-weight: 100;
+            color: #4a9eff;
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+
+        /* Share buttons */
+        .share-container {
+            margin-top: 3rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .share-btn {
+            padding: 1rem 2rem;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #fff;
+            font-size: 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: inherit;
+        }
+
+        .share-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .share-btn:active {
+            transform: translateY(0);
+        }
+
+        .share-btn.copied {
+            background: rgba(74, 158, 255, 0.2);
+            border-color: #4a9eff;
+            color: #4a9eff;
+        }
+
+        .share-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .share-icon-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: transparent;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .share-icon-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: #fff;
+            transform: translateY(-3px);
+        }
+
+        .share-icon-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .share-icon-btn.twitter:hover {
+            background: #1da1f2;
+            border-color: #1da1f2;
+        }
+
+        .share-icon-btn.facebook:hover {
+            background: #4267B2;
+            border-color: #4267B2;
+        }
+
+        .share-icon-btn.reddit:hover {
+            background: #ff4500;
+            border-color: #ff4500;
+        }
+
+        .share-icon-btn.email:hover {
+            background: #ea4335;
+            border-color: #ea4335;
+        }
+
+        .share-icon-btn.whatsapp:hover {
+            background: #25d366;
+            border-color: #25d366;
+        }
+
+        .share-icon-btn.linkedin:hover {
+            background: #0077b5;
+            border-color: #0077b5;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(74, 158, 255, 0.9);
+            backdrop-filter: blur(10px);
+            color: #fff;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 10px 40px rgba(74, 158, 255, 0.3);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .journey-section {
+                padding: 2rem 1.5rem;
+            }
+            .speed-indicator {
+                bottom: 1rem;
+                right: 1rem;
+                padding: 0.75rem 1rem;
+                font-size: 0.75rem;
+            }
+            .share-row {
+                gap: 0.75rem;
+            }
+            .share-icon-btn {
+                width: 44px;
+                height: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="stars" id="stars"></div>
+
+    <div id="canvas-container">
+        <canvas id="light-canvas"></canvas>
+    </div>
+
+    <div class="scroll-content">
+        <!-- Hero -->
+        <section class="hero">
+            <h1>The Speed of Light,<br>But You Can Feel It</h1>
+            <p class="subtitle">
+                Scroll down. A beam of light will travel from Earth to the Moon, 
+                then the Sun, then the nearest star — all in real-time, scaled to your scroll speed.
+            </p>
+            <div class="scroll-hint" onclick="startScroll()">
+                <span>Scroll to begin</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12l7 7 7-7"/>
+                </svg>
+            </div>
+        </section>
+
+        <!-- Earth to Moon -->
+        <div class="spacer" id="spacer-moon"></div>
+        <section class="journey-section" id="moon-section">
+            <div class="label">Destination 1</div>
+            <h2>The Moon</h2>
+            <div class="distance">384,400 km</div>
+            <div class="time">
+                Light takes <span class="highlight">1.28 seconds</span> to reach the Moon.<br>
+                That's about <span class="highlight">3-4 scrolls</span> for you.
+            </div>
+            <div class="fact">
+                🌙 The Moon is so close that light bouncing off it right now is only 
+                slightly older than the blink of your eye.
+            </div>
+        </section>
+
+        <!-- Earth to Sun -->
+        <div class="spacer" id="spacer-sun"></div>
+        <section class="journey-section" id="sun-section">
+            <div class="label">Destination 2</div>
+            <h2>The Sun</h2>
+            <div class="distance">149.6 million km</div>
+            <div class="time">
+                Light takes <span class="highlight">8 minutes 20 seconds</span> to reach us.<br>
+                You'll scroll for about <span class="highlight">8 minutes</span> to match that.
+            </div>
+            <div class="fact">
+                ☀️ The sunlight hitting your face right now left the Sun 
+                <strong>8 minutes ago</strong>. You're literally looking into the past.
+            </div>
+        </section>
+
+        <!-- Earth to Proxima Centauri -->
+        <div class="spacer" id="spacer-star"></div>
+        <section class="journey-section" id="star-section">
+            <div class="label">Destination 3</div>
+            <h2>Proxima Centauri</h2>
+            <div class="distance">40.2 trillion km</div>
+            <div class="time">
+                Light takes <span class="highlight">4.24 years</span> to get here.<br>
+                At your scroll speed, you'd need to scroll for 
+                <span class="highlight">4.24 years</span> non-stop.
+            </div>
+            <div class="fact">
+                ⭐ The light you see from this star tonight left when you were 
+                <strong>4 years younger</strong>. Every star is a time machine.
+            </div>
+        </section>
+
+        <!-- Final wow section -->
+        <section class="final-section">
+            <div class="big-number">299,792,458</div>
+            <h2>meters per second</h2>
+            <p class="subtitle" style="margin-top: 1rem; max-width: 500px;">
+                That's the speed of light. Fast enough to circle Earth 
+                <strong>7.5 times in one second</strong>.<br><br>
+                Yet it still takes <strong>4 years</strong> just to reach the nearest star.
+                The universe is incomprehensibly vast.
+            </p>
+
+            <!-- Share Section -->
+            <div class="share-container">
+                <button class="share-btn" id="mainShareBtn" onclick="shareMain()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+                        <polyline points="16 6 12 2 8 6"/>
+                        <line x1="12" y1="2" x2="12" y2="15"/>
+                    </svg>
+                    <span id="mainShareText">Share this experience</span>
+                </button>
+
+                <div class="share-row">
+                    <button class="share-icon-btn twitter" onclick="shareTo('twitter')" title="Share on X/Twitter">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                    </button>
+                    <button class="share-icon-btn facebook" onclick="shareTo('facebook')" title="Share on Facebook">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        </svg>
+                    </button>
+                    <button class="share-icon-btn reddit" onclick="shareTo('reddit')" title="Share on Reddit">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.737.577a1.25 1.25 0 0 1 1.114-1.146zM9.001 13a1 1 0 0 1 0 2 1 1 0 0 1 0-2zm6 0a1 1 0 0 1 0 2 1 1 0 0 1 0-2z"/>
+                        </svg>
+                    </button>
+                    <button class="share-icon-btn whatsapp" onclick="shareTo('whatsapp')" title="Share on WhatsApp">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                    </button>
+                    <button class="share-icon-btn linkedin" onclick="shareTo('linkedin')" title="Share on LinkedIn">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                        </svg>
+                    </button>
+                    <button class="share-icon-btn email" onclick="shareTo('email')" title="Share via Email">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <div style="height: 50vh;"></div>
+    </div>
+
+    <div class="speed-indicator" id="speedIndicator">
+        <div>Light traveled</div>
+        <div class="value" id="distanceValue">0 km</div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span id="toastText">Link copied to clipboard!</span>
+    </div>
+
+    <script>
+        // ==================== CONSTANTS ====================
+        const SPEED_OF_LIGHT = 299792.458; // km/s
+        const DISTANCES = {
+            moon: 384400,           // km
+            sun: 149600000,         // km  
+            proxima: 40200000000000 // km (4.24 light-years)
+        };
+
+        const SCROLL_SCALE = 1000; // km per pixel scrolled
+
+        // ==================== SHARE DATA ====================
+        const SHARE_DATA = {
+            title: "The Speed of Light, But You Can Feel It",
+            text: "I just experienced how fast light travels through the universe. Scroll and watch a beam of light race from Earth to the Moon, the Sun, and beyond. Mind = blown. 🌌",
+            url: typeof window !== 'undefined' ? window.location.href : "https://speed-of-light-experience.com"
+        };
+
+        // ==================== STARS BACKGROUND ====================
+        function createStars() {
+            const container = document.getElementById('stars');
+            const count = 200;
+            for (let i = 0; i < count; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const size = Math.random() * 2 + 1;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                star.style.opacity = Math.random() * 0.5 + 0.3;
+                container.appendChild(star);
+            }
+        }
+        createStars();
+
+        // ==================== CANVAS SETUP ====================
+        const canvas = document.getElementById('light-canvas');
+        const ctx = canvas.getContext('2d');
+        let canvasWidth, canvasHeight;
+
+        function resizeCanvas() {
+            canvasWidth = window.innerWidth;
+            canvasHeight = window.innerHeight;
+            canvas.width = canvasWidth * window.devicePixelRatio;
+            canvas.height = canvasHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // ==================== LIGHT BEAM SIMULATION ====================
+        let totalDistanceTraveled = 0;
+        let lastScrollY = 0;
+        let trail = [];
+        const MAX_TRAIL_LENGTH = 50;
+
+        function formatDistance(km) {
+            if (km >= 1e12) return (km / 1e12).toFixed(2) + ' trillion km';
+            if (km >= 1e9) return (km / 1e9).toFixed(2) + ' billion km';
+            if (km >= 1e6) return (km / 1e6).toFixed(2) + ' million km';
+            if (km >= 1000) return (km / 1000).toFixed(1) + 'k km';
+            return km.toFixed(0) + ' km';
+        }
+
+        function formatTime(seconds) {
+            if (seconds < 60) return seconds.toFixed(1) + ' seconds';
+            if (seconds < 3600) return (seconds / 60).toFixed(1) + ' minutes';
+            if (seconds < 86400) return (seconds / 3600).toFixed(1) + ' hours';
+            if (seconds < 31536000) return (seconds / 86400).toFixed(1) + ' days';
+            return (seconds / 31536000).toFixed(2) + ' years';
+        }
+
+        // ==================== RENDER LOOP ====================
+        function render() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            const centerY = canvasHeight / 2;
+            const earthX = 80;
+
+            // Draw Earth
+            ctx.beginPath();
+            ctx.arc(earthX, centerY, 20, 0, Math.PI * 2);
+            ctx.fillStyle = '#4a9eff';
+            ctx.shadowColor = '#4a9eff';
+            ctx.shadowBlur = 20;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('EARTH', earthX, centerY + 40);
+
+            const scrollProgress = Math.min(totalDistanceTraveled / DISTANCES.proxima, 1);
+
+            const moonX = earthX + (canvasWidth - 160) * (DISTANCES.moon / DISTANCES.proxima);
+            const moonVisible = totalDistanceTraveled > DISTANCES.moon * 0.3;
+
+            const sunX = earthX + (canvasWidth - 160) * (DISTANCES.sun / DISTANCES.proxima);
+            const sunVisible = totalDistanceTraveled > DISTANCES.sun * 0.3;
+
+            const proximaX = earthX + (canvasWidth - 160) * 0.95;
+            const proximaVisible = totalDistanceTraveled > DISTANCES.proxima * 0.3;
+
+            if (moonVisible) {
+                ctx.beginPath();
+                ctx.arc(moonX, centerY, 8, 0, Math.PI * 2);
+                ctx.fillStyle = '#ccc';
+                ctx.fill();
+                ctx.fillStyle = '#888';
+                ctx.fillText('MOON', moonX, centerY + 25);
+            }
+
+            if (sunVisible) {
+                ctx.beginPath();
+                ctx.arc(sunX, centerY, 25, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffaa00';
+                ctx.shadowColor = '#ffaa00';
+                ctx.shadowBlur = 30;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ffaa00';
+                ctx.fillText('SUN', sunX, centerY + 45);
+            }
+
+            if (proximaVisible) {
+                ctx.beginPath();
+                ctx.arc(proximaX, centerY, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff4444';
+                ctx.fill();
+                ctx.fillStyle = '#ff6666';
+                ctx.fillText('PROXIMA', proximaX, centerY + 22);
+            }
+
+            const lightX = earthX + (canvasWidth - 160) * scrollProgress;
+
+            trail.push({ x: lightX, y: centerY, time: Date.now() });
+            if (trail.length > MAX_TRAIL_LENGTH) trail.shift();
+
+            if (trail.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(trail[0].x, trail[0].y);
+                for (let i = 1; i < trail.length; i++) {
+                    ctx.lineTo(trail[i].x, trail[i].y);
+                }
+                ctx.strokeStyle = 'rgba(74, 158, 255, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            ctx.beginPath();
+            ctx.arc(lightX, centerY, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.shadowColor = '#4a9eff';
+            ctx.shadowBlur = 30;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.beginPath();
+            ctx.moveTo(earthX, centerY - 60);
+            ctx.lineTo(lightX, centerY - 60);
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#4a9eff';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(formatDistance(totalDistanceTraveled), (earthX + lightX) / 2, centerY - 70);
+
+            const timeSeconds = totalDistanceTraveled / SPEED_OF_LIGHT;
+            ctx.fillStyle = '#888';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('Light time: ' + formatTime(timeSeconds), (earthX + lightX) / 2, centerY - 85);
+
+            requestAnimationFrame(render);
+        }
+        render();
+
+        // ==================== SCROLL HANDLING ====================
+        function updateScroll() {
+            const scrollY = window.scrollY;
+            const delta = scrollY - lastScrollY;
+            lastScrollY = scrollY;
+
+            totalDistanceTraveled += Math.abs(delta) * SCROLL_SCALE;
+
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const progress = (scrollY / maxScroll) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+
+            document.getElementById('distanceValue').textContent = formatDistance(totalDistanceTraveled);
+
+            document.querySelectorAll('.journey-section').forEach(section => {
+                const rect = section.getBoundingClientRect();
+                const inView = rect.top < window.innerHeight * 0.7 && rect.bottom > 0;
+                if (inView) {
+                    section.style.opacity = '1';
+                    section.style.transform = 'translateY(0)';
+                }
+            });
+        }
+
+        document.querySelectorAll('.journey-section').forEach(section => {
+            section.style.opacity = '0';
+            section.style.transform = 'translateY(30px)';
+            section.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+        });
+
+        window.addEventListener('scroll', updateScroll);
+        updateScroll();
+
+        function startScroll() {
+            window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+        }
+
+        // ==================== TOAST NOTIFICATION ====================
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toastText');
+            toastText.textContent = message;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // ==================== SHARE FUNCTIONS ====================
+
+        // Main share button - tries native share first, falls back to copy link
+        async function shareMain() {
+            const btn = document.getElementById('mainShareBtn');
+            const btnText = document.getElementById('mainShareText');
+
+            // Try Web Share API first (mobile browsers, modern desktop)
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: SHARE_DATA.title,
+                        text: SHARE_DATA.text,
+                        url: SHARE_DATA.url
+                    });
+                    showToast('Shared successfully!');
+                    return;
+                } catch (err) {
+                    // User cancelled or share failed, fall through to copy
+                }
+            }
+
+            // Fallback: copy link to clipboard
+            await copyToClipboard(SHARE_DATA.url);
+
+            btn.classList.add('copied');
+            btnText.textContent = 'Link copied!';
+            showToast('Link copied to clipboard!');
+
+            setTimeout(() => {
+                btn.classList.remove('copied');
+                btnText.textContent = 'Share this experience';
+            }, 3000);
+        }
+
+        // Copy to clipboard helper
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch (err) {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+        }
+
+        // Platform-specific sharing
+        function shareTo(platform) {
+            const url = encodeURIComponent(SHARE_DATA.url);
+            const text = encodeURIComponent(SHARE_DATA.text);
+            const title = encodeURIComponent(SHARE_DATA.title);
+
+            let shareUrl = '';
+
+            switch(platform) {
+                case 'twitter':
+                    shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+                    break;
+                case 'facebook':
+                    shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
+                    break;
+                case 'reddit':
+                    shareUrl = `https://www.reddit.com/submit?url=${url}&title=${title}`;
+                    break;
+                case 'whatsapp':
+                    shareUrl = `https://wa.me/?text=${text}%20${url}`;
+                    break;
+                case 'linkedin':
+                    shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+                    break;
+                case 'email':
+                    shareUrl = `mailto:?subject=${title}&body=${text}%0A%0A${url}`;
+                    break;
+            }
+
+            if (shareUrl) {
+                // For email, open directly; for others, open in popup
+                if (platform === 'email') {
+                    window.location.href = shareUrl;
+                } else {
+                    const popup = window.open(shareUrl, '_blank', 'width=600,height=400,scrollbars=yes');
+                    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                        // Popup blocked, copy link instead
+                        copyToClipboard(SHARE_DATA.url);
+                        showToast('Popup blocked — link copied instead!');
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
