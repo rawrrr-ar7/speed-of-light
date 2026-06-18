@@ -592,6 +592,13 @@
             canvasHeight = window.innerHeight;
             canvas.width = canvasWidth * window.devicePixelRatio;
             canvas.height = canvasHeight * window.devicePixelRatio;
+            canvas.style.width = canvasWidth + 'px';
+            canvas.style.height = canvasHeight + 'px';
+            // Reset the transform before reapplying scale, so repeated
+            // resize events (common on mobile when the address bar
+            // shows/hides while scrolling) don't compound the scale
+            // factor and push all drawing off-screen.
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
         }
         resizeCanvas();
@@ -601,6 +608,7 @@
         let totalDistanceTraveled = 0;
         let lastScrollY = 0;
         let trail = [];
+        let currentScrollFraction = 0;
         const MAX_TRAIL_LENGTH = 50;
 
         function formatDistance(km) {
@@ -640,16 +648,27 @@
             ctx.textAlign = 'center';
             ctx.fillText('EARTH', earthX, centerY + 40);
 
-            const scrollProgress = Math.min(totalDistanceTraveled / DISTANCES.proxima, 1);
+            // scrollProgress now reflects how far the user has actually
+            // scrolled through the page (0 to 1), not the real-world
+            // distance ratio to Proxima — that ratio is astronomically
+            // tiny for the Moon/Sun and made the dot crawl invisibly
+            // slow and squished Moon/Sun on top of Earth. This map is
+            // a visual metaphor (same approach NASA uses for "to scale"
+            // solar system diagrams), while the actual physics numbers
+            // shown in the text sections remain scientifically accurate.
+            const scrollProgress = Math.min(currentScrollFraction, 1);
 
-            const moonX = earthX + (canvasWidth - 160) * (DISTANCES.moon / DISTANCES.proxima);
-            const moonVisible = totalDistanceTraveled > DISTANCES.moon * 0.3;
+            // Evenly space the four waypoints across the canvas instead
+            // of using true distance ratios, so each is clearly visible
+            // and the dot's movement between them is perceptible.
+            const moonX = earthX + (canvasWidth - 160) * 0.30;
+            const moonVisible = scrollProgress > 0.05;
 
-            const sunX = earthX + (canvasWidth - 160) * (DISTANCES.sun / DISTANCES.proxima);
-            const sunVisible = totalDistanceTraveled > DISTANCES.sun * 0.3;
+            const sunX = earthX + (canvasWidth - 160) * 0.62;
+            const sunVisible = scrollProgress > 0.35;
 
             const proximaX = earthX + (canvasWidth - 160) * 0.95;
-            const proximaVisible = totalDistanceTraveled > DISTANCES.proxima * 0.3;
+            const proximaVisible = scrollProgress > 0.68;
 
             if (moonVisible) {
                 ctx.beginPath();
@@ -731,14 +750,19 @@
         // ==================== SCROLL HANDLING ====================
         function updateScroll() {
             const scrollY = window.scrollY;
-            const delta = scrollY - lastScrollY;
             lastScrollY = scrollY;
 
-            totalDistanceTraveled += Math.abs(delta) * SCROLL_SCALE;
-
             const maxScroll = document.body.scrollHeight - window.innerHeight;
-            const progress = (scrollY / maxScroll) * 100;
-            document.getElementById('progressBar').style.width = progress + '%';
+            const progress = maxScroll > 0 ? (scrollY / maxScroll) : 0;
+            currentScrollFraction = Math.max(0, Math.min(progress, 1));
+
+            // Map scroll fraction onto the real distance to Proxima, so
+            // by the bottom of the page the "light traveled" readout
+            // reaches the full 40.2 trillion km — matching the physics
+            // described in the text sections.
+            totalDistanceTraveled = currentScrollFraction * DISTANCES.proxima;
+
+            document.getElementById('progressBar').style.width = (progress * 100) + '%';
 
             document.getElementById('distanceValue').textContent = formatDistance(totalDistanceTraveled);
 
@@ -831,7 +855,7 @@
 
         // Platform-specific sharing
         function shareTo(platform) {
-            const url = encodeURIComponent(https://speed-of-light-peach.vercel.app/);
+            const url = encodeURIComponent(SHARE_DATA.url);
             const text = encodeURIComponent(SHARE_DATA.text);
             const title = encodeURIComponent(SHARE_DATA.title);
 
