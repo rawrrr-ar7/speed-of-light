@@ -556,6 +556,35 @@
 
         const SCROLL_SCALE = 1000; // km per pixel scrolled
 
+        // The dot's on-screen position is evenly spaced across Earth,
+        // Moon, Sun, and Proxima for visual clarity (real distances are
+        // wildly non-uniform: Moon and Sun would be invisibly close to
+        // Earth at true scale). This function keeps the distance/time
+        // readout physically accurate by mapping the visual progress
+        // back onto the real distance for whichever leg of the journey
+        // the dot currently sits in.
+        const WAYPOINT_FRACTIONS = { earth: 0, moon: 0.30, sun: 0.62, proxima: 0.95 };
+
+        function getRealDistanceForProgress(progress) {
+            const p = Math.min(Math.max(progress, 0), 1);
+
+            if (p <= WAYPOINT_FRACTIONS.moon) {
+                const legProgress = p / WAYPOINT_FRACTIONS.moon;
+                return legProgress * DISTANCES.moon;
+            }
+            if (p <= WAYPOINT_FRACTIONS.sun) {
+                const legProgress = (p - WAYPOINT_FRACTIONS.moon) / (WAYPOINT_FRACTIONS.sun - WAYPOINT_FRACTIONS.moon);
+                return DISTANCES.moon + legProgress * (DISTANCES.sun - DISTANCES.moon);
+            }
+            if (p <= WAYPOINT_FRACTIONS.proxima) {
+                const legProgress = (p - WAYPOINT_FRACTIONS.sun) / (WAYPOINT_FRACTIONS.proxima - WAYPOINT_FRACTIONS.sun);
+                return DISTANCES.sun + legProgress * (DISTANCES.proxima - DISTANCES.sun);
+            }
+            // Past the Proxima waypoint marker (p > 0.95 up to 1.0):
+            // hold at the real Proxima distance rather than overshooting.
+            return DISTANCES.proxima;
+        }
+
         // ==================== SHARE DATA ====================
         const SHARE_DATA = {
             title: "The Speed of Light, But You Can Feel It",
@@ -756,11 +785,12 @@
             const progress = maxScroll > 0 ? (scrollY / maxScroll) : 0;
             currentScrollFraction = Math.max(0, Math.min(progress, 1));
 
-            // Map scroll fraction onto the real distance to Proxima, so
-            // by the bottom of the page the "light traveled" readout
-            // reaches the full 40.2 trillion km — matching the physics
-            // described in the text sections.
-            totalDistanceTraveled = currentScrollFraction * DISTANCES.proxima;
+            // Real, physically accurate distance based on which leg of
+            // the journey the dot is currently in (see
+            // getRealDistanceForProgress above) — this is what drives
+            // the live distance/time readout, kept separate from the
+            // even visual spacing used for the dot's on-screen position.
+            totalDistanceTraveled = getRealDistanceForProgress(currentScrollFraction);
 
             document.getElementById('progressBar').style.width = (progress * 100) + '%';
 
@@ -897,5 +927,10 @@
             }
         }
     </script>
+    <div class="profile-section" style="text-align: center; margin: 40px auto 20px auto; font-family: system-ui, -apple-system, sans-serif;">
+    <img src="https://github.com/rawrrr-ar7.png" alt="AR" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #007bff; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+    <h2 style="margin: 15px 0 5px 0; color: #333; font-size: 1.5rem;">AR</h2>
+    <p style="color: #666; margin: 0; font-size: 1.1rem; font-weight: 500;">Enjoy :)</p>
+</div>
 </body>
 </html>
